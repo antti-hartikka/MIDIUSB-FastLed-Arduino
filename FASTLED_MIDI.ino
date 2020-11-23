@@ -3,28 +3,17 @@
 
 FASTLED_USING_NAMESPACE
 
-// FastLED "100-lines-of-code" demo reel, showing just a few
-// of the kinds of animation patterns you can quickly and easily
-// compose using FastLED.
-//
-// This example also shows one easy way to define multiple
-// animations patterns and have them automatically rotate.
-//
-// -Mark Kriegsman, December 2014
-
 #if defined(FASTLED_VERSION) && (FASTLED_VERSION < 3001000)
 #warning "Requires FastLED 3.1 or later; check github for latest code."
 #endif
 
 #define DATA_PIN    0
-//#define CLK_PIN   4
 #define LED_TYPE    WS2811
 #define COLOR_ORDER GRB
 #define NUM_LEDS    446
 CRGB leds[NUM_LEDS];
 
-// #define BRIGHTNESS          96
-// #define FRAMES_PER_SECOND  120
+#define BRIGHTNESS          96
 
 void setup() {
   // for MIDIUSB
@@ -32,25 +21,25 @@ void setup() {
 
   // tell FastLED about the LED strip configuration
   FastLED.addLeds<LED_TYPE, DATA_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
-  //FastLED.addLeds<LED_TYPE,DATA_PIN,CLK_PIN,COLOR_ORDER>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
 
   // set master brightness control
-  // FastLED.setBrightness(BRIGHTNESS);
+  FastLED.setBrightness(BRIGHTNESS);
 }
+
 
 boolean started = false;
 int hue = 0;
 int sat = 255;
 int count = 0;
-int waveSpeed = 24;  // midi clock pulses at 24 times / quarter note. how long do you want your pulse to be?
-int newSpd = 24; // for new speed info
+int waveSpeed = 24;  // midi clock pulses at 24 times per quarter note. how long do you want your pulse to be?
+
+
+// First parameter, rx.header, is the event type (0x0B = control change).
+// Second parameter, rx.byte1, is the event type, combined with the channel.
+// Third parameter, rx.byte2, is the control number number (0-119).
+// Fourth parameter, rx.byte3, is the control value (0-127).
 
 midiEventPacket_t rx;
-
-// First parameter is the event type (0x0B = control change).
-// Second parameter is the event type, combined with the channel.
-// Third parameter is the control number number (0-119).
-// Fourth parameter is the control value (0-127).
 
 
 void loop()
@@ -64,14 +53,17 @@ void loop()
     // check if note available
     if (rx.header != 0) {
 
-      // if midi == clock
+      // if midi == clock, update led strip
       if (started && rx.byte1 == 0xF8) {
+        // fills entire strip with HSV colours, cubicwave8() forms wave almost as sine
         fill_solid(&(leds[0]), NUM_LEDS, CHSV(hue, sat, cubicwave8(127 + (255 * count / waveSpeed))));
         FastLED.show();
+
         count++;
         if (count == 192) {
           count = 0;
         }
+
         continue;
       }
 
@@ -134,20 +126,24 @@ void loop()
         }
       }
 
-      // if midi == start
+      // if midi == start, fill strip with colour, set counter to zero
       if (rx.byte1 == 0xFA) {
         started = true;
+
         fill_solid(&(leds[0]), NUM_LEDS, CHSV(hue, sat, 255));
         FastLED.show();
+
         count = 0;
         continue;
       }
 
-      // if midi == stop
+      // if midi == stop, fill strip with zero brightness
       if (rx.byte1 == 0xFC) {
         started = false;
+
         fill_solid(&(leds[0]), NUM_LEDS, CHSV(hue, sat, 0));
         FastLED.show();
+
         continue;
       }
 
