@@ -89,7 +89,7 @@ void loop()
           int note = int(rx.byte2 - 0x30);
           switch (note) {
             case 0:         // C
-              waveSpeed = 2;   // 32th
+              waveSpeed = 3;   // 32th
               break;
             case 1:         // C#
               waveSpeed = 4;   // 24th
